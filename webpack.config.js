@@ -15,14 +15,14 @@ module.exports = {
       {
         test: /\.elm$/,
         exclude: [/elm-stuff/, /node_modules/],
-        loader: 'elm-webpack-loader?cwd=' + __dirname,
+        loader: 'elm-webpack-loader?cwd=' + __dirname + '/app',
       },
     ],
   },
   plugins: [
   ].concat(
     BUILD_ENV === 'production'
-    ? [
+      ? [
         new webpack.optimize.UglifyJsPlugin({
           test: /\.js$/,
           sourceMap: false,
@@ -32,6 +32,6 @@ module.exports = {
           },
         }),
       ]
-    : []
+      : []
   ),
 };

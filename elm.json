@@ -1,0 +1,25 @@
+{
+    "type": "package",
+    "version": "1.0.0",
+    "name": "justinmimbs/elm-module-graph",
+    "summary": "Visually explore package and module dependencies for an Elm project",
+    "repository": "https://github.com/justinmimbs/elm-module-graph.git",
+    "license": "BSD-3-Clause",
+    "source-directories": [
+        "src"
+    ],
+    "elm-version": "0.19.1 <= v <= 0.20.0",
+    "exposed-modules": [
+        "ModuleGraph"
+    ],
+    "dependencies": {
+        "brainrape/elm-arc-diagram": "1.0.0 <= v <= 2.0.0",
+        "elm/browser": "1.0.2 <= v <= 2.0.0",
+        "elm/core": "1.0.5 <= v <= 2.0.0",
+        "elm/html": "1.0.0 <= v <= 2.0.0",
+        "elm/json": "1.1.3 <= v <= 2.0.0",
+        "elm/svg": "1.0.1 <= v <= 2.0.0",
+        "elm-community/basics-extra": "4.1.0 <= v <= 5.0.0"
+    },
+    "test-dependencies": {}
+}

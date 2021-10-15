@@ -1,8 +1,9 @@
-module ModuleGraph exposing (Input, decodeInput, Model, init, Msg, update, view)
+module ModuleGraph exposing (Input, Model, Msg, decodeInput, init, update, view)
 
-import AcyclicDigraph exposing (Node, Edge, Cycle, AcyclicDigraph)
+import AcyclicDigraph exposing (AcyclicDigraph, Cycle, Edge, Node)
 import ArcDiagram
 import ArcDiagram.Distance
+import Basics.Extra exposing (flip)
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
@@ -10,6 +11,7 @@ import Json.Decode exposing (Decoder)
 import Set exposing (Set)
 import Svg exposing (Svg)
 import Svg.Attributes
+
 
 
 -- Input
@@ -23,7 +25,7 @@ decodeInput : Decoder Input
 decodeInput =
     Json.Decode.dict
         (Json.Decode.map2
-            (,)
+            (\x y -> ( x, y ))
             (Json.Decode.field "imports" <| Json.Decode.map Set.fromList <| Json.Decode.list Json.Decode.string)
             (Json.Decode.field "package" Json.Decode.string)
         )
@@ -52,10 +54,10 @@ init input =
         graphs =
             graphsFromInput input
     in
-        Model
-            graphs
-            (initExcludedPackages (graphs.packages |> Tuple.second))
-            Nothing
+    Model
+        graphs
+        (initExcludedPackages (graphs.packages |> Tuple.second))
+        Nothing
 
 
 graphsFromInput : Input -> Graphs
@@ -65,7 +67,7 @@ graphsFromInput input =
         moduleIdFromName =
             input
                 |> Dict.keys
-                |> List.indexedMap (flip (,))
+                |> List.indexedMap (\x y -> ( y, x ))
                 |> Dict.fromList
                 |> lookup -1
 
@@ -78,26 +80,26 @@ graphsFromInput input =
                             moduleId =
                                 moduleIdFromName moduleName
                         in
-                            ( Set.union
-                                (imports |> Set.map ((flip (,)) moduleId << moduleIdFromName))
-                                edges
-                            , Dict.insert
-                                moduleId
-                                ( secondWord moduleName |> Maybe.withDefault moduleName, packageName )
-                                labels
-                            )
+                        ( Set.union
+                            (imports |> Set.map ((\x y -> ( y, x )) moduleId << moduleIdFromName))
+                            edges
+                        , Dict.insert
+                            moduleId
+                            ( secondWord moduleName |> Maybe.withDefault moduleName, packageName )
+                            labels
+                        )
                     )
                     ( Set.empty, Dict.empty )
 
         packageNameFromModuleId : Node -> String
         packageNameFromModuleId =
-            (flip Dict.get) moduleLabels >> Maybe.map Tuple.second >> Maybe.withDefault "<package>"
+            flip Dict.get moduleLabels >> Maybe.map Tuple.second >> Maybe.withDefault "<package>"
 
         packageNameEdges : Set ( String, String )
         packageNameEdges =
             moduleEdges
                 |> Set.map (mapTuple packageNameFromModuleId)
-                |> Set.filter (uncurry (/=))
+                |> Set.filter (\( x, y ) -> x /= y)
 
         packageIdFromName : Dict String Node
         packageIdFromName =
@@ -106,14 +108,14 @@ graphsFromInput input =
                     (\( x, y ) -> Set.insert x >> Set.insert y)
                     Set.empty
                 |> Set.toList
-                |> List.indexedMap (flip (,))
+                |> List.indexedMap (\x y -> ( y, x ))
                 |> Dict.fromList
     in
-        Graphs
-            ( packageNameEdges |> Set.map (mapTuple (lookup -1 packageIdFromName))
-            , invertDict packageIdFromName
-            )
-            ( moduleEdges, moduleLabels )
+    Graphs
+        ( packageNameEdges |> Set.map (mapTuple (lookup -1 packageIdFromName))
+        , invertDict packageIdFromName
+        )
+        ( moduleEdges, moduleLabels )
 
 
 secondWord : String -> Maybe String
@@ -125,7 +127,7 @@ initExcludedPackages : Dict Node String -> Set Node
 initExcludedPackages packageLabels =
     [ "elm-lang/core", "elm-lang/html", "elm-lang/virtual-dom" ]
         |> List.filterMap
-            ((flip Dict.get) (invertDict packageLabels))
+            (flip Dict.get (invertDict packageLabels))
         |> Set.fromList
 
 
@@ -189,7 +191,7 @@ view { graphs, excludedPackages, selectedModule } =
             lookup ( "<module>", "<package>" ) moduleLabels
 
         isExcludedPackage =
-            (flip Set.member) excludedPackages
+            flip Set.member excludedPackages
 
         packageView =
             packageEdges
@@ -198,9 +200,9 @@ view { graphs, excludedPackages, selectedModule } =
                     (viewCycles packageNameFromId)
                     (ArcDiagram.view
                         packagesLayout
-                        { viewLabel = viewLabel << isExcludedPackage <<* packageNameFromId
+                        { viewLabel = \x -> (viewLabel << isExcludedPackage) x (packageNameFromId x)
                         , colorNode = nodeColor << isExcludedPackage
-                        , colorEdge = edgeColor << (mapTuple isExcludedPackage)
+                        , colorEdge = edgeColor << mapTuple isExcludedPackage
                         }
                     )
 
@@ -212,6 +214,7 @@ view { graphs, excludedPackages, selectedModule } =
                 (\moduleId ( _, packageName ) set ->
                     if Set.member packageName excludedPackageNames then
                         set
+
                     else
                         Set.insert moduleId set
                 )
@@ -226,63 +229,49 @@ view { graphs, excludedPackages, selectedModule } =
                     (viewCycles (moduleLabelFromId >> Tuple.first))
                     (viewModulesDiagram moduleLabelFromId selectedModule)
     in
-        Html.div
-            [ Html.Attributes.style
-                [ ( "font-family", "Helvetica, Arial, san-serif" )
-                ]
+    Html.div
+        [ Html.Attributes.style "font-family" "Helvetica, Arial, san-serif" ]
+        [ viewSection
+            [ viewHeader "Packages" (Dict.size packageLabels)
+            , packageView |> Html.map TogglePackage
             ]
-            [ viewSection
-                [ viewHeader "Packages" (Dict.size packageLabels)
-                , packageView |> Html.map TogglePackage
-                ]
-            , viewSection
-                [ viewHeader "Modules" (Set.size includedModuleIds)
-                , moduleView |> Html.map ToggleModule
-                ]
+        , viewSection
+            [ viewHeader "Modules" (Set.size includedModuleIds)
+            , moduleView |> Html.map ToggleModule
             ]
+        ]
 
 
 viewSection : List (Html a) -> Html a
 viewSection =
     Html.div
-        [ Html.Attributes.style
-            [ ( "margin", "20px 0 40px" )
-            ]
-        ]
+        [ Html.Attributes.style "margin" "20px 0 40px" ]
 
 
 viewCycles : (Node -> String) -> List Cycle -> Html a
 viewCycles toLabel cycles =
-    Html.div
-        []
+    Html.div []
         [ Html.text "Graph has the following cycles:"
         , Html.ol
-            [ Html.Attributes.style
-                [ ( "font-family", labelFontFamily )
-                ]
-            ]
+            [ Html.Attributes.style "font-family" labelFontFamily ]
             (cycles |> List.map (viewCycle toLabel))
         ]
 
 
 viewCycle : (Node -> String) -> Cycle -> Html a
 viewCycle toLabel cycle =
-    Html.li
-        []
+    Html.li []
         [ Html.text (cycle |> List.map toLabel |> String.join " -> ") ]
 
 
 viewHeader : String -> Int -> Html a
 viewHeader title n =
     Html.h2
-        [ Html.Attributes.style
-            [ ( "margin", "0 0 20px" )
-            , ( "font-size", "20px" )
-            , ( "font-weight", "normal" )
-            ]
+        [ Html.Attributes.style "margin" "0 0 20px"
+        , Html.Attributes.style "font-size" "20px"
+        , Html.Attributes.style "font-weight" "normal"
         ]
-        [ Html.text <| title ++ " (" ++ toString n ++ ")"
-        ]
+        [ Html.text <| title ++ " (" ++ String.fromInt n ++ ")" ]
 
 
 defaultPaint : ArcDiagram.Paint
@@ -310,13 +299,13 @@ viewModulesDiagram moduleLabelFromNode selectedNode graph =
 
                 Nothing ->
                     { defaultPaint
-                        | viewLabel = moduleLabelFromNode >> (viewLabelPair False)
+                        | viewLabel = moduleLabelFromNode >> viewLabelPair False
                     }
     in
-        ArcDiagram.view
-            modulesLayout
-            paint
-            graph
+    ArcDiagram.view
+        modulesLayout
+        paint
+        graph
 
 
 induceSubgraph : Set Node -> Set Edge -> Set Edge
@@ -331,6 +320,7 @@ edgeColor : ( Bool, Bool ) -> String
 edgeColor ( xIsDimmed, yIsDimmed ) =
     if xIsDimmed || yIsDimmed then
         "rgba(0, 0, 0, 0.1)"
+
     else
         "gray"
 
@@ -339,6 +329,7 @@ nodeColor : Bool -> String
 nodeColor isDimmed =
     if isDimmed then
         "rgb(200, 200, 200)"
+
     else
         "black"
 
@@ -401,6 +392,7 @@ toggleMaybe : a -> Maybe a -> Maybe a
 toggleMaybe a ma =
     if ma == Just a then
         Nothing
+
     else
         Just a
 
@@ -424,13 +416,14 @@ toggleSet : comparable -> Set comparable -> Set comparable
 toggleSet a set =
     if Set.member a set then
         Set.remove a set
+
     else
         Set.insert a set
 
 
 lookup : v -> Dict comparable v -> comparable -> v
 lookup default dict =
-    (flip Dict.get) dict >> Maybe.withDefault default
+    flip Dict.get dict >> Maybe.withDefault default
 
 
 {-| Given a Dict x y, return the Dict y x. Assume the Dict represents a
@@ -441,9 +434,3 @@ invertDict =
     Dict.foldl
         (flip Dict.insert)
         Dict.empty
-
-
-infixl 8 <<*
-(<<*) : (x -> a -> b) -> (x -> a) -> x -> b
-(<<*) f g x =
-    f x (g x)

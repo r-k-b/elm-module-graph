@@ -1,5 +1,10 @@
 # elm-module-graph
 
+### This is a fork of [justinmimbs/elm-module-graph](https://github.com/justinmimbs/elm-module-graph) updated for Elm 0.19.1.
+
+### It only works for elm applications, not packages. This is because `elm.json` format was changed in 0.19 so packages don't have exact dependencty information. 
+
+
 Visually explore package and module dependencies for an Elm project.
 
 

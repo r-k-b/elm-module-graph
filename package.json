@@ -7,7 +7,7 @@
     "url": "https://github.com/justinmimbs/elm-module-graph.git"
   },
   "devDependencies": {
-    "elm-webpack-loader": "4.x.x",
+    "elm-webpack-loader": "8.x.x",
     "webpack": "1.x.x",
     "webpack-dev-server": "1.x.x"
   },

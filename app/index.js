@@ -1,7 +1,7 @@
-var Elm = require('../src/Main.elm');
-var ports = require('../src/ports.js');
+var Elm = require('./src/Main.elm');
+var ports = require('./ports.js');
 
-var app = Elm.Main.fullscreen();
+var app = Elm.Elm.Main.init({ node: document.getElementById("elm-node") });
 ports.init(app);
 
 // leak reference to app for injecting example
