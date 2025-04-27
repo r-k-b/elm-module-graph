@@ -6,6 +6,7 @@
       let
         pkgs = nixpkgs.legacyPackages."${system}";
         inherit (pkgs) mkShell stdenv;
+
         elm-module-graph = stdenv.mkDerivation {
           name = "elm-module-graph";
           buildInputs = with pkgs; [ python ];
@@ -32,6 +33,9 @@
         #defaultApp = edapp;
 
         # `nix develop`
-        devShell = mkShell { nativeBuildInputs = with pkgs; [ python ]; };
+        devShell = mkShell {
+          nativeBuildInputs = (with pkgs; [ nodejs python3 simple-http-server ])
+            ++ (with pkgs.elmPackages; [ elm elm-upgrade elm-format ]);
+        };
       });
 }
