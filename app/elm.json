@@ -1,14 +1,10 @@
 {
     "type": "application",
-    "version": "1.0.0",
     "source-directories": [
         "src",
         "../src"
     ],
     "elm-version": "0.19.1",
-    "exposed-modules": [
-        "ModuleGraph"
-    ],
     "dependencies": {
         "direct": {
             "brainrake/elm-arc-diagram": "1.0.0",
