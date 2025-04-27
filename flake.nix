@@ -6,34 +6,43 @@
       let
         pkgs = nixpkgs.legacyPackages."${system}";
         inherit (pkgs) mkShell stdenv;
+        inherit (pkgs.lib) fileset;
 
-        elm-module-graph = stdenv.mkDerivation {
-          name = "elm-module-graph";
-          buildInputs = with pkgs; [ python ];
-          buildPhase = ''
-            echo hiya
-          '';
+        graph-builder = stdenv.mkDerivation {
+          name = "elm-module-graph-builder";
+          buildInputs = with pkgs; [ python3 ];
           installPhase = ''
             mkdir -p $out/bin
-            cp ./elm-module.graph.py $out/bin/
+            cp ./elm-module-graph.py $out/bin/
           '';
-          src = ./.;
-          passthru = { exePath = "/elm-module-graph.py"; };
+          src = fileset.toSource {
+            root = ./.;
+            fileset = ./elm-module-graph.py;
+          };
+          passthru = { exePath = "/bin/elm-module-graph.py"; };
 
           system = system;
         };
-        edapp = utils.lib.mkApp { drv = elm-module-graph; };
+
+        emgApp = {
+          type = "app";
+          program = "${graph-builder}/${graph-builder.passthru.exePath}";
+          meta = {
+            description = "Extract the module structure of an Elm project into a graph, as a json file.";
+          };
+        };
+
       in {
         # `nix build`
-        #packages.elm-module-graph = elm-module-graph;
-        #defaultPackage = elm-module-graph;
+        packages.graph-builder = graph-builder;
+        packages.default = graph-builder;
 
         # `nix run`
-        #apps.elm-module-graph = edapp;
-        #defaultApp = edapp;
+        apps.graph-builder = emgApp;
+        apps.default = emgApp;
 
         # `nix develop`
-        devShell = mkShell {
+        devShells.default = mkShell {
           nativeBuildInputs = (with pkgs; [ nodejs python3 simple-http-server ])
             ++ (with pkgs.elmPackages; [ elm elm-upgrade elm-format ]);
         };
