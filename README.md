@@ -18,7 +18,18 @@ Explore dependency graphs for these Elm projects:
 - [graph](https://justinmimbs.github.io/elm-module-graph/examples/tradenomiitti.html) - [Tradenomiliitto/tradenomiitti](https://github.com/Tradenomiliitto/tradenomiitti)
 
 
-## Usage
+## Usage (Nix)
+
+1.  __Generate__ a `module-graph.json` file for your Elm project with the Python script in this repository.
+
+    ```sh
+    nix run github:r-k-b/elm-module-graph -- project/src/Main.elm --output module-graph.json
+    ```
+
+2.  __Provide__ that file to this page: [elm-module-graph](https://justinmimbs.github.io/elm-module-graph).
+
+
+## Usage (Python)
 
 1.  __Generate__ a `module-graph.json` file for your Elm project with the Python script in this repository.
 
