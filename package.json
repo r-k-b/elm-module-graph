@@ -8,8 +8,8 @@
   },
   "devDependencies": {
     "elm-webpack-loader": "8.x.x",
-    "webpack": "1.x.x",
-    "webpack-dev-server": "1.x.x"
+    "webpack": "5.x.x",
+    "webpack-dev-server": "5.x.x"
   },
   "scripts": {
     "build": "BUILD_ENV=production webpack",
